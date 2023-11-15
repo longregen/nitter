@@ -3,15 +3,16 @@ version: "3"
 services:
 
   nitter:
-    image: ghcr.io/privacydevel/nitter:master
+    image: ghcr.io/bepvte/nitter:pre_guest_accounts
     container_name: nitter
     ports:
-      - "127.0.0.1:8080:8080" # Replace with "8080:8080" if you don't use a reverse proxy
+      - "127.0.0.1:8083:8080" # Replace with "8080:8080" if you don't use a reverse proxy
     volumes:
       - ./nitter.conf:/src/nitter.conf:Z,ro
+      # - ./guest_accounts.json:/src/guest_accounts.json:Z,ro
+    restart: unless-stopped
     depends_on:
       - nitter-redis
-    restart: unless-stopped
     healthcheck:
       test: wget -nv --tries=1 --spider http://127.0.0.1:8080/Jack/status/20 || exit 1
       interval: 30s
@@ -23,11 +24,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    networks: [nitter_network]
 
   nitter-redis:
     image: redis:6-alpine
     container_name: nitter-redis
     command: redis-server --save 60 1 --loglevel warning
+    networks: [nitter_network]
     volumes:
       - nitter-redis:/data
     restart: unless-stopped
@@ -45,3 +48,7 @@ services:
 
 volumes:
   nitter-redis:
+
+networks:
+  nitter_network:
+    external: true
